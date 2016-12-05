@@ -9,11 +9,7 @@ Application Mode: User space (Xenomai)
 
 Slaves: Sanyo Denki * 6
 
-Metrics: Ecat Applcication Periodic Time
-
-         Ecat Execution Time
-
-         Ecat Applcication Jitter
+Metrics: Periodic Time,Execution Time,Jitter
 
 Basis: Worst case value of each metric per minute
 
