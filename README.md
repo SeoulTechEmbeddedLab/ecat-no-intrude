@@ -11,9 +11,9 @@ Slaves: Sanyo Denki * 6
 
 Metrics: Ecat Applcication Periodic Time
 
-	 Ecat Execution Time
+         Ecat Execution Time
 
-	 Ecat Applcication Jitter
+         Ecat Applcication Jitter
 
 Basis: Worst case value of each metric per minute
 
