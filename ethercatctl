@@ -38,7 +38,6 @@ RMMOD=/sbin/rmmod
 MODINFO=/sbin/modinfo
 
 ETHERCAT=/opt/etherlab/bin/ethercat
-#ETHERCAT=/rt-prj_3.14.28/etherlab/bin/ethercat
 
 #------------------------------------------------------------------------------
 

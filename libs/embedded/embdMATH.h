@@ -19,7 +19,8 @@ typedef struct MathSimpleStatistics {
 	float std;
 } MATH_STATS;
 
-
+typedef enum {FALSE = 0, TRUE,} bool;
+	
 int MathAbsValI(int value);
 int MathArrayMaxI(int ArraySample[], int ArraySize);
 int MathArrayMinI(int ArraySample[], int ArraySize);
@@ -101,7 +102,7 @@ float MathArrayStD(int ArraySample[], int ArraySize,int Scaling){
 	
 	int iCnt;
 	float AveVal;
-	float Variance=0.;
+	float Variance;
 	float StDev;
 
 	AveVal = MathArrayAve(ArraySample, ArraySize,Scaling);

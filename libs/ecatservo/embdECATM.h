@@ -36,7 +36,7 @@ typedef enum {
 /* Slaves  */
 #define ALIAS_POSITION(x) 	0,x
 #define _ALLNODE 		(-5)
-#define SANYODENKI_SLAVENUM 	5	
+#define SANYODENKI_SLAVENUM 	5
 
 /*Covertion Macros */
 #define RADPS2RPS(x)		(x*(0.1591549430919))

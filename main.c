@@ -18,6 +18,8 @@ int  XenoInit(void);
 void XenoQuit(void);
 void DoInput();
 void SignalHandler(int signum);
+void PrintEval(int BufPrd[], int BufExe[], int BufJit[], int ArraySize);
+void FilePrintEval(char *FileName,int BufPrd[], int BufExe[], int BufJit[], int ArraySize);
 /****************************************************************************/
 void EcatCtrlTask(void *arg){
 	int iSlaveCnt;
@@ -52,7 +54,6 @@ void EcatCtrlTask(void *arg){
 			if(sanyoPrevStatusWord[iSlaveCnt] == sanyoStatusWord[iSlaveCnt]){
 				continue;
 			}
-
 			switch(sanyoStatusWord[iSlaveCnt]){	
 				case SANYO_SWITCH_ON_DISABLED:
 					sanyoReady(iSlaveCnt);
@@ -74,23 +75,22 @@ void EcatCtrlTask(void *arg){
 			}
 			sanyoPrevStatusWord[iSlaveCnt] = sanyoStatusWord[iSlaveCnt]; 
 		}
-	
 	}
-
 	switch(sanyoServoOp){
 	
 		case RUN:
-			if (!(timingFlag)) timingFlag = 1;		
+#ifdef PERF_EVAL	   
+			if (bTimingFlag == FALSE) bTimingFlag = TRUE;		
+#endif //PERF_EVAL
 			sanyoSetVelocity(_ALLNODE,500);
 			break;
 		case STOP:
 			sanyoShutDown(_ALLNODE);
-			quitFlag = 1;
+			bQuitFlag = TRUE;
 			break;
 		default:
 			break;
 	}
-
 	/* write application time to master */
 	RtmEcatMasterAppTime = rt_timer_read();
 	EcatWriteAppTimeToMaster((uint64_t)RtmEcatMasterAppTime);
@@ -98,64 +98,48 @@ void EcatCtrlTask(void *arg){
 	EcatSendProcessDomain();
 
 #ifdef MEASURE_TIMING
-	RtmEcatExecTime    = rt_timer_read();
-
-	temp_EcatPeriod	   = ((int)RtmEcatPeriodStart - (int)RtmEcatPeriodEnd);
-	temp_EcatExecution = ((int)RtmEcatExecTime - (int)RtmEcatPeriodStart);
-	temp_EcatJitter	   = MathAbsValI(temp_EcatPeriod - (int)ECATCTRL_TASK_PERIOD);
-
-	if(timingFlag)
-	{
-		if(temp_EcatPeriod > EcatPeriod)	EcatPeriod 	= temp_EcatPeriod; 
-		if(temp_EcatExecution > EcatExecution)  EcatExecution 	= temp_EcatExecution;
-		if(temp_EcatJitter > EcatJitter)	EcatJitter 	= temp_EcatJitter;
-	}
+	RtmEcatExecTime = rt_timer_read();
+	EcatPeriod 	 = ((int)RtmEcatPeriodStart - (int)RtmEcatPeriodEnd);
+	EcatExecution = ((int)RtmEcatExecTime - (int)RtmEcatPeriodStart);
+	EcatJitter	 = MathAbsValI(EcatPeriod - (int)ECATCTRL_TASK_PERIOD);
 #endif
  
-#if 1 //  0 to omit : 1 for processing
+#if 0 //  0 not visible : 1 visible
 	if (!(iTaskTick % FREQ_PER_SEC(ECATCTRL_TASK_PERIOD))){
 		/*Do every 1 second */
-		rt_printf("Task Duration: %d s Pos: %d \n", iTaskTick/FREQ_PER_SEC(ECATCTRL_TASK_PERIOD),iSlavePos);
-
-#ifdef PERF_EVAL	   
-		if(timingFlag) 
-		{
-			BufEcatPeriodTime[iBufEcatDataCnt] 	=   EcatPeriod;
-			BufEcatExecTime[iBufEcatDataCnt]  	=   EcatExecution;
-			BufEcatJitter[iBufEcatDataCnt]  	=   EcatJitter;
-			++iBufEcatDataCnt;
-                        EcatPeriod      = 0;
-                        EcatExecution   = 0;
-                        EcatJitter      = 0;
-
-
-			if(iBufEcatDataCnt == BUF_SIZE)
-			{
-				timingFlag = 0;
-				sanyoServoOp = STOP;
-			}
-		}
-#endif //PERF_EVAL
-
+		rt_printf("Task Duration: %d s \n", iTaskTick/FREQ_PER_SEC(ECATCTRL_TASK_PERIOD));
 	}
 #endif
+
+
+#ifdef PERF_EVAL	   
+	if(bTimingFlag == TRUE) {
+		BufEcatPeriodTime[iBufEcatDataCnt] 	=   EcatPeriod;
+		BufEcatExecTime[iBufEcatDataCnt]  	=   EcatExecution;
+		BufEcatJitter[iBufEcatDataCnt]  	=   EcatJitter;
+		++iBufEcatDataCnt;
+
+		if(iBufEcatDataCnt == BUF_SIZE){
+			bTimingFlag = FALSE;
+			sanyoServoOp = STOP;
+			}
+	}
+#endif //PERF_EVAL
 
 
 #ifdef MEASURE_TIMING	    
    	   RtmEcatPeriodEnd = RtmEcatPeriodStart;
-#endif
+#endif //MEASURE_TIMING
 	   iTaskTick++;
     }
 }
 /****************************************************************************/
 int main(int argc, char **argv){
-	
 	int ret = 0;
 
 	/* Interrupt Handler "ctrl+c"  */
 	signal(SIGTERM, SignalHandler);
         signal(SIGINT, SignalHandler);	 
-
 
 	/* EtherCAT Init */
    	if ((ret = EcatInit(ECATCTRL_TASK_PERIOD,SANYO_CYCLIC_VELOCITY))!=0){
@@ -175,41 +159,19 @@ int main(int argc, char **argv){
 
 	while (1) {
 		usleep(1);
-		if (quitFlag) break;
+		if (bQuitFlag) break;
 	}
 
 #ifdef PERF_EVAL
 #ifdef PRINT_TIMING
-	int iCnt;
-	FileEcatTiming = fopen("EcatCtrl-Timing.csv", "w");
-	for(iCnt=0; iCnt < iBufEcatDataCnt; ++iCnt){
 
-		fprintf(FileEcatTiming,"%d.%06d,%d.%03d,%d.%03d\n",
-				BufEcatPeriodTime[iCnt]/SCALE_1M,
-				BufEcatPeriodTime[iCnt]%SCALE_1M,
-				BufEcatExecTime[iCnt]/SCALE_1K,
-				BufEcatExecTime[iCnt]%SCALE_1K,
-				BufEcatJitter[iCnt]/SCALE_1K,
-				BufEcatJitter[iCnt]%SCALE_1K);
-	}
-	fclose(FileEcatTiming);
+	FilePrintEval((char *)PRINT_FILENAME,BufEcatPeriodTime,
+			BufEcatExecTime,BufEcatJitter,iBufEcatDataCnt);
+
 #endif // PRINT_TIMING
+	
+	PrintEval(BufEcatPeriodTime,BufEcatExecTime,BufEcatJitter,iBufEcatDataCnt);
 
-	EcatPeriodStat = GetStatistics(BufEcatPeriodTime, iBufEcatDataCnt,SCALE_1M);  
-	printf("\n[Period] Max: %.6f Min: %.6f Ave: %.6f St. D: %.6f\n", EcatPeriodStat.max,
-			EcatPeriodStat.min,
-			EcatPeriodStat.ave,
-			EcatPeriodStat.std);
-	EcatExecStat = GetStatistics(BufEcatExecTime, iBufEcatDataCnt,SCALE_1K);  
-	printf("[Exec]	 Max: %.3f Min: %.3f Ave: %.3f St. D: %.3f\n", EcatExecStat.max,
-			EcatExecStat.min,
-			EcatExecStat.ave,
-			EcatExecStat.std);
-	EcatJitterStat = GetStatistics(BufEcatJitter, iBufEcatDataCnt,SCALE_1K);  
-	printf("[Jitter] Max: %.3f Min: %.3f Ave: %.3f St. D: %.3f\n", EcatJitterStat.max,
-			EcatJitterStat.min,
-			EcatJitterStat.ave,
-			EcatJitterStat.std);
 #endif //PERF_EVAL
 
 	XenoQuit();
@@ -220,7 +182,7 @@ return ret;
 
 /****************************************************************************/
 void SignalHandler(int signum){
-		quitFlag=1;
+		bQuitFlag = TRUE;
 }
 
 /****************************************************************************/
@@ -265,4 +227,54 @@ void XenoQuit(void){
 	rt_task_delete(&TskEcatCtrl);
 	printf("\033[%dm%s\033[0m",95,"Xenomai Task(s) Deleted!\n");
 }
+
+/****************************************************************************/
+
+void PrintEval(int BufPrd[], int BufExe[], int BufJit[], int ArraySize){
+
+/* MATH_STATS: Simple Statistical Analysis (libs/embedded/embdMATH.h)
+ * 	float ave;
+ * 	float max;
+ * 	float min;
+ * 	float std; */
+	MATH_STATS EcatPeriodStat, EcatExecStat, EcatJitterStat;
+
+	EcatPeriodStat = GetStatistics(BufPrd, ArraySize,SCALE_1M);  
+	printf("\n[Period] Max: %.6f Min: %.6f Ave: %.6f St. D: %.6f\n", EcatPeriodStat.max,
+			EcatPeriodStat.min,
+			EcatPeriodStat.ave,
+			EcatPeriodStat.std);
+	EcatExecStat = GetStatistics(BufExe, ArraySize,SCALE_1K);  
+	printf("[Exec]	 Max: %.3f Min: %.3f Ave: %.3f St. D: %.3f\n", EcatExecStat.max,
+			EcatExecStat.min,
+			EcatExecStat.ave,
+			EcatExecStat.std);
+	EcatJitterStat = GetStatistics(BufJit, ArraySize,SCALE_1K);  
+	printf("[Jitter] Max: %.3f Min: %.3f Ave: %.3f St. D: %.3f\n", EcatJitterStat.max,
+			EcatJitterStat.min,
+			EcatJitterStat.ave,
+			EcatJitterStat.std);
+}
+
+/****************************************************************************/
+
+void FilePrintEval(char *FileName,int BufPrd[], int BufExe[], int BufJit[], int ArraySize){
+
+	FILE *FileEcatTiming;
+	int iCnt;
+
+	FileEcatTiming = fopen(FileName, "w");
+
+	for(iCnt=0; iCnt < ArraySize; ++iCnt){
+		fprintf(FileEcatTiming,"%d.%06d,%d.%03d,%d.%03d\n",
+				BufPrd[iCnt]/SCALE_1M,
+				BufPrd[iCnt]%SCALE_1M,
+				BufExe[iCnt]/SCALE_1K,
+				BufExe[iCnt]%SCALE_1K,
+				BufJit[iCnt]/SCALE_1K,
+				BufJit[iCnt]%SCALE_1K);
+	}
+	fclose(FileEcatTiming);
+}
+
 /****************************************************************************/

@@ -6,13 +6,12 @@
 #######################################################################################################
 
 XENOMAI_PATH=/usr/xenomai
-#XENOMAI_PATH=/rt_prj_3.14.28/xenomai
+#XENOMAI_PATH=/rtProj/xenomai
 
-CFLAGS_OPTIONS = -Wall -D_GNU_SOURCE
+CFLAGS_OPTIONS = -Wall -D_GNU_SOURCE  
 #CFLAGS_OPTIONS = -Wall -D_GNU_SOURCE -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -mfpu=neon -ffast-math -O3 
 
 INC_ECAT = /opt/etherlab/include 
-#INC_ECAT = /rt-prj_3.14.28/etherlab/include 
 INC_EMBD = ./libs/embedded/ 
 INC_SERVO = ./libs/ecatservo/ 
 INC_LIBS = ./libs/ 
@@ -21,7 +20,6 @@ INC_DIRS = -I$(INC_ECAT) -I$(INC_EMBD) -I$(INC_SERVO) -I$(INC_LIBS) $(INC_XENO)
 
 LIB_XENO = $(shell $(XENOMAI_PATH)/bin/xeno-config --skin native --ldflags)
 LIB_DIR  = /opt/etherlab/lib 
-#LIB_DIR  = /rt-prj_3.14.28/etherlab/lib 
 
 CFLAGS   = $(CFLAGS_OPTIONS) $(INC_DIRS)
 LDFLAGS	 = -lm $(LIB_XENO) -L$(LIB_DIR) -lethercat_rtdm

@@ -24,6 +24,7 @@ const ec_pdo_entry_reg_t embdDomain_regs[] = {
 	SANYO_SERVO_REGS(2),
 	SANYO_SERVO_REGS(3),
 	SANYO_SERVO_REGS(4),
+//	SANYO_SERVO_REGS(5),
 	{}
 };
 /****************************************************************************/
@@ -214,7 +215,6 @@ return _EMBD_RET_SCC_;
 /*****************************************************************************/
 void EcatQuit(void){
 
-	EcatSendProcessDomain();
 	printf("\033[%dm%s\033[0m",91,"Releasing EtherCAT Master Instance...");
 
 	ecrt_release_master(eMaster);

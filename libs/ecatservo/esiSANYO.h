@@ -20,7 +20,6 @@
 /****************************************************************************/
 
 #define SANYO_SERVO 0x000001b9, 0x00000002 // Vendor ID , Product Code
-//#define SANYO_SERVO  0x00007595, 0x00000000 // Vendor ID , Product Code
 
 #define SANYO_SERVO_REGS(x) \
 	{ALIAS_POSITION(x), SANYO_SERVO, SANYODENKI_CONTROL_WORD , &sanyoCtrlWordOff[x]}, \
@@ -59,7 +58,6 @@ ec_sync_info_t sanyo_syncs[] = {
 };
 
 /*****************************************************************************/
-
 unsigned short sanyoGetStatusVal(unsigned short statusWord)
 {
 	if((statusWord & 0x4F) == 0x00) {
@@ -91,7 +89,7 @@ unsigned short sanyoGetStatusVal(unsigned short statusWord)
 	}
 	return statusWord;
 }
-
+/*****************************************************************************/
 const char* sanyoGetStatusStr(unsigned short statusWord)
 {
 	if((statusWord & 0x4F) == 0x00) {
