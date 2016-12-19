@@ -215,10 +215,9 @@ return _EMBD_RET_SCC_;
 /*****************************************************************************/
 void EcatQuit(void){
 
+	EcatSendProcessDomain();
 	printf("\033[%dm%s\033[0m",91,"Releasing EtherCAT Master Instance...");
-
 	ecrt_release_master(eMaster);
-
 	printf("\033[%dm%s\033[0m",91,"OK!\n");
 }
 /*****************************************************************************/
